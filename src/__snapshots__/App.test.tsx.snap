@@ -1,0 +1,292 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<App /> matches snapshot 1`] = `
+<div
+  className="StyledGrommet-sc-19lkkz7-0 eUfLDp"
+>
+  <div
+    className="sc-bdVaJa chsQor"
+  >
+    <div
+      className="StyledGrid-sc-1wofa1l-0 iRdBke"
+    >
+      <div
+        className="StyledBox-sc-13pk1d4-0 WXbsv"
+      >
+        <h2
+          className="StyledHeading-sc-1rdh4aw-0 bfYwiB"
+        >
+          Video converter
+        </h2>
+      </div>
+      <div
+        className="StyledBox-sc-13pk1d4-0 eWNJJD"
+        style={
+          Object {
+            "minHeight": "540px",
+          }
+        }
+      >
+        <div
+          className="StyledBox-sc-13pk1d4-0 bmvJAa"
+        >
+          <h4
+            className="StyledHeading-sc-1rdh4aw-0 sDhRh"
+          >
+            Выберите форматы:
+          </h4>
+          <button
+            aria-label="Open Drop"
+            className="Select__StyledSelectDropButton-sc-17idtfo-1 dloaWS StyledButton-sc-323bzc-0 henbPS"
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onKeyDown={[Function]}
+            onMouseOut={[Function]}
+            onMouseOver={[Function]}
+            type="button"
+          >
+            <div
+              className="StyledBox-sc-13pk1d4-0 erazuK"
+            >
+              <div
+                className="StyledBox-sc-13pk1d4-0 XINUX"
+              >
+                <div
+                  className="StyledTextInput__StyledTextInputContainer-sc-1x30a0s-1 kYQCpm"
+                >
+                  <input
+                    autoComplete="off"
+                    className="Select__SelectTextInput-sc-17idtfo-0 lmyIUy StyledTextInput-sc-1x30a0s-0 duvNfq"
+                    multiple={true}
+                    onBlur={[Function]}
+                    onChange={[Function]}
+                    onClick={[Function]}
+                    onFocus={[Function]}
+                    onKeyDown={[Function]}
+                    readOnly={true}
+                    tabIndex="-1"
+                    type="text"
+                    value="MP4"
+                  />
+                </div>
+              </div>
+              <div
+                className="StyledBox-sc-13pk1d4-0 eLQtUu"
+                style={
+                  Object {
+                    "minWidth": "auto",
+                  }
+                }
+              >
+                <svg
+                  aria-label="FormDown"
+                  className="StyledIcon-ofa7kd-0 dSllCE"
+                  viewBox="0 0 24 24"
+                >
+                  <polyline
+                    fill="none"
+                    points="18 9 12 15 6 9"
+                    stroke="#000"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+            </div>
+          </button>
+        </div>
+        <div
+          className="StyledBox-sc-13pk1d4-0 bmvhSy"
+        >
+          <h4
+            className="StyledHeading-sc-1rdh4aw-0 sDhRh"
+          >
+            Выберите разрешения:
+          </h4>
+          <button
+            aria-label="Open Drop"
+            className="Select__StyledSelectDropButton-sc-17idtfo-1 dloaWS StyledButton-sc-323bzc-0 iIkDwS"
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onKeyDown={[Function]}
+            onMouseOut={[Function]}
+            onMouseOver={[Function]}
+            type="button"
+          >
+            <div
+              className="StyledBox-sc-13pk1d4-0 erazuK"
+            >
+              <div
+                className="StyledBox-sc-13pk1d4-0 XINUX"
+              >
+                <div
+                  className="StyledTextInput__StyledTextInputContainer-sc-1x30a0s-1 kYQCpm"
+                >
+                  <input
+                    autoComplete="off"
+                    className="Select__SelectTextInput-sc-17idtfo-0 lmyIUy StyledTextInput-sc-1x30a0s-0 duvNfq"
+                    multiple={true}
+                    onBlur={[Function]}
+                    onChange={[Function]}
+                    onClick={[Function]}
+                    onFocus={[Function]}
+                    onKeyDown={[Function]}
+                    readOnly={true}
+                    tabIndex="-1"
+                    type="text"
+                    value="R360P"
+                  />
+                </div>
+              </div>
+              <div
+                className="StyledBox-sc-13pk1d4-0 eLQtUu"
+                style={
+                  Object {
+                    "minWidth": "auto",
+                  }
+                }
+              >
+                <svg
+                  aria-label="FormDown"
+                  className="StyledIcon-ofa7kd-0 dSllCE"
+                  viewBox="0 0 24 24"
+                >
+                  <polyline
+                    fill="none"
+                    points="18 9 12 15 6 9"
+                    stroke="#000"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+            </div>
+          </button>
+        </div>
+        <div
+          className="StyledBox-sc-13pk1d4-0 bmvhSy"
+        >
+          <h4
+            className="StyledHeading-sc-1rdh4aw-0 sDhRh"
+          >
+            Выберите файл:
+          </h4>
+          <div
+            className="sc-bwzfXH butWfv"
+            disabled={false}
+            onBlur={[Function]}
+            onClick={[Function]}
+            onDragEnter={[Function]}
+            onDragLeave={[Function]}
+            onDragOver={[Function]}
+            onDrop={[Function]}
+            onFocus={[Function]}
+            onKeyDown={[Function]}
+            tabIndex={0}
+          >
+            <input
+              accept="video/*"
+              autoComplete="off"
+              multiple={false}
+              onChange={[Function]}
+              onClick={[Function]}
+              style={
+                Object {
+                  "display": "none",
+                }
+              }
+              tabIndex={-1}
+              type="file"
+            />
+            <p>
+              Перенесите файл сюда, либо кликните для выбора
+            </p>
+          </div>
+          <div
+            className="sc-htpNat evhBYf"
+          >
+            <video
+              width="100px"
+            />
+          </div>
+        </div>
+        <div
+          className="StyledBox-sc-13pk1d4-0 jGuGG"
+        >
+          <button
+            className="StyledButton-sc-323bzc-0 bfYBPE"
+            disabled={true}
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onMouseOut={[Function]}
+            onMouseOver={[Function]}
+            type="button"
+          >
+            <div
+              className="StyledBox-sc-13pk1d4-0 hHwlHq"
+            >
+              <div
+                className="sc-bxivhb fDeHuh StyledBox-sc-13pk1d4-0 IRSNj"
+                color="#f8f8f8"
+              >
+                <svg
+                  aria-label="Update"
+                  className="StyledIcon-ofa7kd-0 jAaLrm"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M1.7507,16.0022 C3.3517,20.0982 7.3367,23.0002 11.9997,23.0002 C18.0747,23.0002 22.9997,18.0752 22.9997,12.0002 M22.2497,7.9982 C20.6487,3.9012 16.6627,1.0002 11.9997,1.0002 C5.9247,1.0002 0.9997,5.9252 0.9997,12.0002 M8.9997,16.0002 L0.9997,16.0002 L0.9997,24.0002 M22.9997,0.0002 L22.9997,8.0002 L14.9997,8.0002"
+                    fill="none"
+                    stroke="#000"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+              <div
+                className="StyledBox__StyledBoxGap-sc-13pk1d4-1 iChEkS"
+              />
+              Конвертировать
+            </div>
+          </button>
+        </div>
+      </div>
+      <div
+        className="StyledBox-sc-13pk1d4-0 fWnHbL"
+      >
+        <div
+          className="StyledBox-sc-13pk1d4-0 jgSAq"
+        >
+          <h4
+            className="StyledHeading-sc-1rdh4aw-0 jBQayy"
+            style={
+              Object {
+                "maxWidth": "unset",
+              }
+            }
+          >
+            Статус: 
+            
+            
+          </h4>
+          <span
+            className="StyledText-sc-1sadyjn-0 KlJPT"
+          >
+            Выберите файл для конвертации
+          </span>
+        </div>
+      </div>
+      <div
+        className="StyledBox-sc-13pk1d4-0 ezOBpl"
+      >
+        <span
+          className="StyledText-sc-1sadyjn-0 gNZQxf"
+          size="small"
+        >
+          Made by @prplx at GeekBrains
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;

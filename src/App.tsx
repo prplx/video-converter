@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useReducer } from 'react';
+import { useMutation, useApolloClient } from 'react-apollo-hooks';
 import {
   Grommet,
   Heading,
@@ -7,7 +8,6 @@ import {
   Select,
   Button,
   Text,
-  Meter,
   ResponsiveContext,
 } from 'grommet';
 import { Update } from 'grommet-icons';
@@ -18,33 +18,119 @@ import {
   generateFileNames,
   getDropStatusMessage,
   getValidationErrors,
+  generateResult,
+  updateResult,
+  getAreas,
 } from './helpers';
-import { AVAILABLE_FORMATS, AVAILABLE_RESOLUTIONS } from './constants';
+import { AvailableFormats, AvailableResolutions } from './constants';
+import reducer, { IState } from './reducer';
+import {
+  ActionTypes,
+  ConversionState,
+  ASSET_TAG,
+  CONVERSION_TIMEOUT,
+} from './constants';
+import { GET_ASSET, CREATE_ASSET } from './apollo/queries';
+import { getAsset_assets, getAsset } from './apollo/types/getAsset';
+import { createAsset_assets } from './apollo/types/createAsset';
+import { IFileResult } from './types';
+import { createAsset, uploadFile, pollConversionStatus } from './api';
+import './index.css';
+
+const initialState: IState = {
+  error: '',
+  statusMessage: '',
+  pending: false,
+  files: [],
+  formats: [AvailableFormats.MP4],
+  resolutions: [AvailableResolutions.R360P],
+  conversionState: ConversionState.IDLE,
+  result: [],
+};
 
 const App: React.FC = () => {
-  const [videoFormats, setVideoFormats] = useState([AVAILABLE_FORMATS[0]]);
-  const [videoResolutions, setVideoResolutions] = useState([
-    AVAILABLE_RESOLUTIONS[0],
-  ]);
-  const [videoFiles, setVideoFiles] = useState<File[]>([]);
-  const [pending, setPending] = useState(false);
-  const onDrop = useCallback(acceptedFiles => setVideoFiles(acceptedFiles), []);
+  const client = useApolloClient();
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { files, formats, resolutions } = state;
+  const dispatchError = (text: string) =>
+    dispatch({ type: ActionTypes.SET_ERROR, payload: text });
+  const dispatchSetResult = (payload: IFileResult[] | undefined) =>
+    dispatch({
+      type: ActionTypes.SET_RESULT,
+      payload,
+    });
+  const onDrop = useCallback(
+    acceptedFiles => {
+      dispatch({ type: ActionTypes.SET_FILES, payload: acceptedFiles });
+      dispatchSetResult(
+        generateResult(generateFileNames(formats, resolutions)),
+      );
+    },
+    [formats, resolutions],
+  );
   const {
     getRootProps,
     getInputProps,
     isDragActive,
     isDragAccept,
     isDragReject,
-  } = useDropzone({ onDrop, accept: 'video/*', multiple: false });
+  } = useDropzone({
+    onDrop,
+    accept: 'video/*',
+    multiple: false,
+    disabled: state.pending,
+  });
   const videoObjectURL: string | undefined = useMemo(() => {
-    if (!videoFiles.length) return;
+    if (!files.length) return;
 
-    return URL.createObjectURL(videoFiles[0]);
-  }, [videoFiles]);
+    return URL.createObjectURL(files[0]);
+  }, [files]);
+
   const validationErrors: string[] = useMemo(
-    () => getValidationErrors(videoFormats, videoResolutions, videoFiles),
-    [videoFiles, videoFormats, videoResolutions],
+    () => getValidationErrors(formats, resolutions, files),
+    [files, formats, resolutions],
   );
+
+  const createAssetMutation = useMutation<createAsset_assets>(CREATE_ASSET);
+
+  const convert = async () => {
+    dispatch({ type: ActionTypes.SET_PENDING, payload: true });
+    try {
+      const { id, uploadUrl } = await createAsset(createAssetMutation, {
+        title: files[0].name,
+        tags: [ASSET_TAG],
+        transform: { format: formats, resolution: resolutions },
+      });
+
+      await uploadFile(state.files[0], uploadUrl, (progress: number) =>
+        dispatch({
+          type: ActionTypes.SET_UPLOADING_PROGRESS,
+          payload: progress,
+        }),
+      );
+
+      dispatch({ type: ActionTypes.SET_CONVERTING });
+
+      pollConversionStatus(
+        () =>
+          client.query<getAsset_assets>({
+            query: GET_ASSET,
+            variables: { id },
+            fetchPolicy: 'no-cache',
+          }),
+        (result: getAsset, error: string, done: boolean) => {
+          if (error) dispatchError(error);
+
+          dispatchSetResult(updateResult(state.result, result));
+
+          if (done) dispatch({ type: ActionTypes.SET_DONE });
+        },
+        CONVERSION_TIMEOUT,
+      );
+    } catch (error) {
+      dispatchError(error.message);
+    }
+  };
 
   return (
     <Grommet>
@@ -73,21 +159,31 @@ const App: React.FC = () => {
               <Box
                 gridArea="main"
                 background="light-2"
+                style={{ minHeight: '540px' }}
                 pad={{ vertical: 'large', horizontal: 'medium' }}>
                 <Box margin={{ bottom: '1em' }}>
                   <Heading level={4} margin="none">
                     Выберите форматы:
                   </Heading>
                   <Select
-                    options={AVAILABLE_FORMATS}
+                    options={Object.keys(AvailableFormats)}
                     multiple
-                    value={videoFormats}
+                    value={formats}
                     closeOnChange={false}
                     onChange={({ option }) =>
-                      updateSource(option, videoFormats, setVideoFormats)
+                      updateSource(option, formats, (next: string[]) => {
+                        dispatch({
+                          type: ActionTypes.SET_FORMATS,
+                          payload: next,
+                        });
+                        dispatchSetResult(
+                          generateResult(generateFileNames(next, resolutions)),
+                        );
+                      })
                     }
-                    messages={{ multiple: videoFormats.join(', ') }}
+                    messages={{ multiple: formats.join(', ') }}
                     margin={{ top: '1em', bottom: '2em' }}
+                    disabled={state.pending}
                   />
                 </Box>
                 <Box margin={{ bottom: '2em' }}>
@@ -95,26 +191,32 @@ const App: React.FC = () => {
                     Выберите разрешения:
                   </Heading>
                   <Select
-                    options={AVAILABLE_RESOLUTIONS}
+                    options={Object.keys(AvailableResolutions)}
                     multiple
                     closeOnChange={false}
-                    value={videoResolutions}
+                    value={resolutions}
                     onChange={({ option }) =>
-                      updateSource(
-                        option,
-                        videoResolutions,
-                        setVideoResolutions,
-                      )
+                      updateSource(option, resolutions, (next: string[]) => {
+                        dispatch({
+                          type: ActionTypes.SET_RESOLUTIONS,
+                          payload: next,
+                        });
+                        dispatchSetResult(
+                          generateResult(generateFileNames(formats, next)),
+                        );
+                      })
                     }
-                    messages={{ multiple: videoResolutions.join(', ') }}
+                    messages={{ multiple: resolutions.join(', ') }}
                     margin={{ top: '1em', bottom: '1em' }}
+                    disabled={state.pending}
                   />
                 </Box>
                 <Box margin={{ bottom: '2em' }}>
                   <Heading level={4} margin="none">
                     Выберите файл:
                   </Heading>
-                  <DropZoneWrapper {...getRootProps()}>
+                  <DropZoneWrapper
+                    {...getRootProps({ disabled: state.pending })}>
                     <input {...getInputProps()} />
                     <p>
                       {getDropStatusMessage(
@@ -124,33 +226,48 @@ const App: React.FC = () => {
                       )}
                     </p>
                   </DropZoneWrapper>
-                  <Box margin={{ top: '1em' }} height="56.250px">
+                  <VideopreviewWrapper>
                     <video src={videoObjectURL} width="100px" />
-                  </Box>
+                  </VideopreviewWrapper>
                 </Box>
                 <Box align="start" height="3em">
                   <Button
-                    disabled={!!validationErrors.length || pending}
+                    disabled={
+                      !!validationErrors.length ||
+                      state.pending ||
+                      state.conversionState === ConversionState.DONE
+                    }
                     fill="vertical"
                     primary
                     label="Конвертировать"
                     icon={
-                      <Spinner animate={pending}>
+                      <Spinner animate={state.pending}>
                         <Update color="#f8f8f8" />
                       </Spinner>
                     }
-                    onClick={() => setPending(true)}
+                    onClick={convert}
                   />
                 </Box>
               </Box>
-
               <Box
                 gridArea="result"
                 background="light-2"
                 pad={{ vertical: 'large', horizontal: 'medium' }}>
                 <Box margin={{ bottom: '3em' }}>
-                  <Heading level={4} margin={{ bottom: '1em', top: 'none' }}>
-                    Результат:
+                  <Heading
+                    alignSelf="stretch"
+                    style={{ maxWidth: 'unset' }}
+                    level={4}
+                    margin={{ bottom: '1em', top: 'none' }}>
+                    Статус:&nbsp;
+                    {state.statusMessage && (
+                      <Text weight="normal">{state.statusMessage}</Text>
+                    )}
+                    {state.error && (
+                      <Text weight="normal" color="status-error">
+                        {state.error}
+                      </Text>
+                    )}
                   </Heading>
                   {validationErrors.map((error: string) => (
                     <Text key={error} color="status-error">
@@ -159,15 +276,13 @@ const App: React.FC = () => {
                   ))}
                   {!validationErrors.length && (
                     <List>
-                      {generateFileNames(
-                        videoFiles[0].name,
-                        videoFormats,
-                        videoResolutions,
-                      ).map((name, i) => (
+                      {state.result.map((file, i) => (
                         <ListItem
-                          text={`${i + 1}. ${name}`}
-                          key={name}
-                          pending={pending}
+                          text={`${i + 1}. ${file.name}`}
+                          url={file.downloadUrl}
+                          progress={file.progress}
+                          key={file.name}
+                          pending={state.pending}
                         />
                       ))}
                     </List>
@@ -191,21 +306,23 @@ const App: React.FC = () => {
 
 const List: React.FC = props => <Box tag="ul" border="top" {...props} fill />;
 
-const ListItem: React.FC<{ text: string; pending: boolean }> = ({
-  text,
-  pending,
-}) => (
-  <Box tag="li" border="bottom" pad="small" direction="row" justify="between">
+const ListItem: React.FC<{
+  text: string;
+  pending: boolean;
+  url?: string;
+  progress?: number;
+}> = ({ text, pending, url, progress }) => (
+  <Box
+    style={{ height: '60px' }}
+    align="center"
+    tag="li"
+    border="bottom"
+    pad="small"
+    direction="row"
+    justify="between">
     <Text>{text}</Text>
-    {pending && (
-      <Meter
-        type="circle"
-        background="light-3"
-        values={[{ value: 30, label: '30', color: 'brand' }]}
-        size="24px"
-        thickness="4"
-      />
-    )}
+    {pending && !!progress && !url && <Text>{progress}%</Text>}
+    {url && <Button label="Скачать" primary target="_blank" href={url} />}
   </Box>
 );
 
@@ -214,16 +331,29 @@ const Wrapper = styled.div`
   width: 100vw;
 `;
 
-const DropZoneWrapper = styled.div`
+const DropZoneWrapper = styled.div<any>`
   margin-top: 1em;
   padding: 16px;
   border-radius: 8px;
-  border: 2px dashed #7d4cdb;
-  color: #7d4cdb;
+  border: ${props =>
+    !props.disabled
+      ? '2px dashed #7d4cdb'
+      : '2px dashed rgba(125, 76, 219, .3)'};
+  color: ${props => (!props.disabled ? '#7d4cdb' : 'rgba(125, 76, 219, .3)')};
   text-align: center;
 
   &:hover {
     cursor: pointer;
+  }
+`;
+
+const VideopreviewWrapper = styled.div`
+  display: none;
+  height: 56.25px;
+  margin-top: 1em;
+
+  @media (min-height: 900px) {
+    display: unset;
   }
 `;
 
@@ -240,20 +370,5 @@ const Spinner = styled(Box)<{ animate: boolean }>`
   animation: ${spinKeyframes} 1s infinite linear;
   animation: ${({ animate }) => !animate && 'none'};
 `;
-
-const getAreas = (size: string) =>
-  size === 'small'
-    ? [
-        { name: 'header', start: [0, 0], end: [1, 0] },
-        { name: 'main', start: [0, 1], end: [1, 1] },
-        { name: 'result', start: [0, 2], end: [1, 2] },
-        { name: 'footer', start: [0, 3], end: [1, 3] },
-      ]
-    : [
-        { name: 'header', start: [0, 0], end: [1, 0] },
-        { name: 'main', start: [0, 1], end: [1, 1] },
-        { name: 'result', start: [1, 1], end: [1, 1] },
-        { name: 'footer', start: [0, 2], end: [1, 2] },
-      ];
 
 export default App;

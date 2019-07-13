@@ -1,3 +1,8 @@
+import { IFileResult } from './types';
+import { getAsset_assets_one_asset_files } from './apollo/types/getAsset';
+import { AssetsFileState } from './types/graphql-global-types';
+import { path, find, last } from 'ramda';
+
 export const updateSource = (
   nextValue: string,
   source: string[],
@@ -11,7 +16,6 @@ export const updateSource = (
 };
 
 export const generateFileNames = (
-  fileName: string,
   formats: string[],
   resolutions: string[],
 ): string[] => {
@@ -21,14 +25,7 @@ export const generateFileNames = (
 
   formats.forEach(format =>
     resolutions.forEach(res =>
-      result.push(
-        `${fileName
-          .split('.')
-          .slice(0, -1)
-          .join('')
-          .toLocaleLowerCase()
-          .replace(/[^a-zA-Z0-9]/g, '_')}.${res}.${format}`,
-      ),
+      result.push(`${res.toLowerCase()}.${format.toLowerCase()}`),
     ),
   );
   return result;
@@ -58,9 +55,68 @@ export const getValidationErrors = (
 ): string[] => {
   let result: string[] = [];
 
-  if (!formats.length) result.push('Выберите форматы для конвертации!');
-  if (!resolutions.length) result.push('Выберите разрешения для конвертации!');
-  if (!files.length) result.push('Выберите файл для конвертации!');
+  if (!formats.length) result.push('Выберите форматы для конвертации');
+  if (!resolutions.length) result.push('Выберите разрешения для конвертации');
+  if (!files.length) result.push('Выберите файл для конвертации');
 
   return result;
 };
+
+export const generateResult = (fileNames: string[]): IFileResult[] =>
+  fileNames.map(name => ({
+    name,
+  }));
+
+export const updateResult = (
+  current: IFileResult[],
+  asset?: any,
+): IFileResult[] | undefined => {
+  if (!asset) return;
+
+  const files: getAsset_assets_one_asset_files[] | undefined = path(
+    ['assets', 'one', 'asset', 'files'],
+    asset,
+  );
+
+  if (!files) return;
+
+  return current.map(currentFile => {
+    let progress: number | undefined = currentFile.progress;
+    const found = find(
+      (file: any) =>
+        typeof file.downloadUrl === 'string' &&
+        currentFile.name === last(file.downloadUrl.split('/')),
+    )(files);
+    if (found && found.meta) {
+      const progressMeta = find(
+        (metaDatum: any) => metaDatum.key === 'video-converting-progress',
+      )(found.meta);
+
+      if (progressMeta && progressMeta.value) progress = +progressMeta.value;
+    }
+
+    return {
+      ...currentFile,
+      downloadUrl:
+        found && found.state === AssetsFileState.READY
+          ? found.downloadUrl
+          : undefined,
+      progress,
+    };
+  });
+};
+
+export const getAreas = (size: string) =>
+  size === 'small'
+    ? [
+        { name: 'header', start: [0, 0], end: [1, 0] },
+        { name: 'main', start: [0, 1], end: [1, 1] },
+        { name: 'result', start: [0, 2], end: [1, 2] },
+        { name: 'footer', start: [0, 3], end: [1, 3] },
+      ]
+    : [
+        { name: 'header', start: [0, 0], end: [1, 0] },
+        { name: 'main', start: [0, 1], end: [1, 1] },
+        { name: 'result', start: [1, 1], end: [1, 1] },
+        { name: 'footer', start: [0, 2], end: [1, 2] },
+      ];
